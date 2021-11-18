@@ -167,9 +167,11 @@ function rainbow_plot_kernel(kernel::TopographicKernel, label; pal=0.45, sz1=4, 
     y_col = kernel.kernel[:, 4]
 
     cols = map((x, y) -> RGB(x, pal, y), x_ret, y_ret)
+    title1 = text(label, align=(:left,:top))
 
-    plt1 = scatter(x_ret, y_ret, color=cols, markersize=sz1, xlim=(0,1), ylim=(0,1), xlabel="Scaled Nasal Field", ylabel="Scaled Temporal Axes", legend=false, aspect_ratio=1)
-    plt2 = scatter(x_col, y_col, color=cols, markersize=sz2, xlim=(0,1), ylim=(0,1), xlabel="Scaled Rostral Field", ylabel="Scaled Caudal Axes", title=label, legend=false, aspect_ratio=1)
+
+    plt1 = scatter(x_ret, y_ret, color=cols, markersize=sz1, xlim=(0,1), ylim=(0,1), xlabel="Scaled Nasal Field", ylabel="Scaled Temporal Field", legend=false, aspect_ratio=1)
+    plt2 = scatter(x_col, y_col, color=cols, markersize=sz2, xlim=(0,1), ylim=(0,1), xlabel="Scaled Rostral Axes", ylabel="Scaled Caudal Axes", title=label, titleloc=:left, legend=false, aspect_ratio=1)
     final = plot(plt1, plt2, layout=(1,2), dpi=DPI)
     return final
 end
