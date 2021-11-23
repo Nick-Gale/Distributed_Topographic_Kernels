@@ -17,9 +17,10 @@ export rainbow_plot_kernel
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 struct TopographicKernel
     kernel::Array{Float64, 2}
+    epha3
     function TopographicKernel(N, nkern, ncontacts, s, alpha, beta, gamma, delta, sigmacol, sigmaret, T; eta=0.1, hyp1=0.9, hyp2=0.99, case="WT", seed_number=1, epha3_level=1.0, epha3_fraction=0.5)
         # initialise on the GPU
-        CUDA.device!(1)
+        CUDA.device!(0)
         xret, yret = retinal_initialisation(N, nkern)
         xs, ys = collicular_initialisation(xret, yret)
         epha3_mask = map(x -> rand() > epha3_fraction, 1:length(xret))
@@ -34,7 +35,7 @@ struct TopographicKernel
         CUDA.reclaim()
         # sample 
         kernel = synaptic_sampling(xs_final, ys_final, s, xret, yret, nkern, ncontacts; seed_number) 
-        new(kernel)
+        new(kernel, epha3_mask)
     end
 end
 
@@ -44,8 +45,8 @@ function retinal_initialisation(N, nkern)
     yret = zeros(N)
     for i = 1:nkern:N
         ind = floor(Int, i/nkern)
-        xret[i:(i + nkern - 1)] .= mod(ind, L) / L 
-        yret[i:(i + nkern - 1)] .= floor(ind / L) / L
+        xret[i:(i + nkern - 1)] .= mod(ind, L) / L .+ 1e-7
+        yret[i:(i + nkern - 1)] .= floor(ind / L) / L .+ 1e-7
     end
     return xret, yret
 end
@@ -167,11 +168,9 @@ function rainbow_plot_kernel(kernel::TopographicKernel, label; pal=0.45, sz1=4, 
     y_col = kernel.kernel[:, 4]
 
     cols = map((x, y) -> RGB(x, pal, y), x_ret, y_ret)
-    title1 = text(label, align=(:left,:top))
 
-
-    plt1 = scatter(x_ret, y_ret, color=cols, markersize=sz1, xlim=(0,1), ylim=(0,1), xlabel="Scaled Nasal Field", ylabel="Scaled Temporal Field", legend=false, aspect_ratio=1)
-    plt2 = scatter(x_col, y_col, color=cols, markersize=sz2, xlim=(0,1), ylim=(0,1), xlabel="Scaled Rostral Axes", ylabel="Scaled Caudal Axes", title=label, titleloc=:left, legend=false, aspect_ratio=1)
+    plt1 = scatter(x_ret, y_ret, color=cols, markersize=sz1, xlim=(0,1), ylim=(0,1), xlabel="Scaled Nasal Field", ylabel="Scaled Temporal Field", title="$(label): Pre-Synaptic", legend=false, aspect_ratio=1)
+    plt2 = scatter(x_col, y_col, color=cols, markersize=sz2, xlim=(0,1), ylim=(0,1), xlabel="Scaled Rostral Axes", ylabel="Scaled Caudal Axes", title="$(label): Post-Synaptic", legend=false, aspect_ratio=1)
     final = plot(plt1, plt2, layout=(1,2), dpi=DPI)
     return final
 end
