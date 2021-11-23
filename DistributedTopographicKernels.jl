@@ -167,7 +167,7 @@ function rainbow_plot_kernel(kernel::TopographicKernel, label; pal=0.45, sz1=4, 
     x_col = kernel.kernel[:, 3]
     y_col = kernel.kernel[:, 4]
 
-    cols = map((x, y) -> RGB(x, pal, y), x_ret, y_ret)
+    cols = map((x, y) -> RGB(x, pal, y), x_ret ./ maximum(x_ret), y_ret ./ maximum(y_ret))
 
     plt1 = scatter(x_ret, y_ret, color=cols, markersize=sz1, xlim=(0,1), ylim=(0,1), xlabel="Scaled Nasal Field", ylabel="Scaled Temporal Field", title="$(label): Pre-Synaptic", legend=false, aspect_ratio=1)
     plt2 = scatter(x_col, y_col, color=cols, markersize=sz2, xlim=(0,1), ylim=(0,1), xlabel="Scaled Rostral Axes", ylabel="Scaled Caudal Axes", title="$(label): Post-Synaptic", legend=false, aspect_ratio=1)

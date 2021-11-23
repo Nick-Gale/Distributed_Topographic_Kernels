@@ -17,35 +17,37 @@ delta = 1e0
 sigmacol = 0.01
 sigmaret = 0.01
 
-epha3 = 5e-2
+epha3 = 8e-2
 
 epha3_fraction = 0.4
 
 s = 0.05
 
 nkerns = 2
-N = 400
+N = 1500
 ncontacts = 2
 
-T = 50
+T = 100
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Function to generate lattice object from kernel
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     function kernel_lattice(kernel::TopographicKernel; collicular_divider=2.0, direction="L", prespecified_inds=nothing)
-        if direction == "L"
-            inds = findall(x -> x < collicular_divider, kernel.kernel[:, 3])
-        elseif direction == "R"
-            inds = findall(x -> x > collicular_divider, kernel.kernel[:, 3])
-        end
-
         if prespecified_inds != nothing
             inds = prespecified_inds
+        else
+            inds = 1:size(kernel.kernel)[1]
+        end
+
+        if direction == "L"
+            inds_selected = findall(x -> x < collicular_divider, kernel.kernel[inds, 3])
+        elseif direction == "R"
+            inds_selected = findall(x -> x > collicular_divider, kernel.kernel[inds, 3])
         end
         
-        x_ret = kernel.kernel[inds, 1]
-        y_ret = kernel.kernel[inds, 2]
-        x_col = kernel.kernel[inds, 3]
-        y_col = kernel.kernel[inds, 4]
+        x_ret = kernel.kernel[inds, 1][inds_selected]
+        y_ret = kernel.kernel[inds, 2][inds_selected]
+        x_col = kernel.kernel[inds, 3][inds_selected]
+        y_col = kernel.kernel[inds, 4][inds_selected]
 
         params_linking = Dict("linking_key" => "phase_linking", "params" => Dict(:phase_parameter => nothing))
         params_lattice = Dict(  "lattice_forward_preimage" => Dict(:intial_points=>round(Int64, length(x_col)/20), :spacing_upper_bound=>2.32, :spacing_lower_bound=>1.68, :minimum_spacing_fraction=>0.75, :spacing_reduction_factor=>0.95), 
@@ -71,7 +73,7 @@ for current_case in trial_cases
 
     lo = kernel_lattice(tk; direction = "L", collicular_divider = 2.0)
     p = lattice_plot(lo)
-    implot = plot(p[1], p[3], p[2], p[4], title = ["$(current_case): Pre-to-Post" "$(current_case): Post-to-Pre" "" ""], layout = (2,2), dpi=500)
+    implot = plot(p[1], p[4], p[2], p[3], title = ["$(current_case): Forward" "$(current_case): Reverse" "" ""], layout = (2,2), dpi=500)
     savefig(implot, "figure_lattice_$(current_case).png")
 end
 
@@ -93,11 +95,11 @@ end
     lo_caudal = kernel_lattice(tk_epha3; collicular_divider=0.5, direction="R")
     p_caudal = lattice_plot(lo_caudal)
 
-    implot = plot(p_wt[1], p_wt[2], p_epha3[1], p_epha3[2], title = ["EphA3-WT: Pre-to-Post" "EphA3-Ilset2: Pre-to-Post" "" ""], layout = (2,2), dpi=500)
-    savefig(implot, "figure_lattice_EphA3_pre.png")
+    pre_implot = plot(p_wt[1], p_epha3[1], p_wt[2], p_epha3[2], title = ["EphA3-WT: Forward" "EphA3-Ilset2: Forward" "" ""], layout = (2,2), dpi=500)
+    savefig(pre_implot, "figure_lattice_EphA3_pre.png")
 
-    implot = plot(p_rostral[3], p_rostral[4], p_caudal[3], p_caudal[4], title = ["EphA3-Rostral: Post-to-Pre" "EphA3-Caudal: Post-to-Pre" "" ""], layout = (2,2), dpi=500)
-    savefig(implot, "figure_lattice_EphA3_post.png")
+    post_implot = plot(p_rostral[4], p_caudal[4], p_rostral[3], p_caudal[3], title = ["EphA3-Rostral: Reverse" "EphA3-Caudal: Reverse" "" ""], layout = (2,2), dpi=500)
+    savefig(post_implot, "figure_lattice_EphA3_post.png")
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Runtime plots
