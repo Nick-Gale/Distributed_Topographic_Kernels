@@ -17,17 +17,17 @@ delta = 1e0
 sigmacol = 0.01
 sigmaret = 0.01
 
-epha3 = 8e-2
+epha3 = 5e-2
 
 epha3_fraction = 0.4
 
 s = 0.05
 
-nkerns = 2
-N = 1500
-ncontacts = 2
+nkerns = 3
+N = 4800
+ncontacts = 5
 
-T = 100
+T = 200
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Function to generate lattice object from kernel
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -50,10 +50,10 @@ T = 100
         y_col = kernel.kernel[inds, 4][inds_selected]
 
         params_linking = Dict("linking_key" => "phase_linking", "params" => Dict(:phase_parameter => nothing))
-        params_lattice = Dict(  "lattice_forward_preimage" => Dict(:intial_points=>round(Int64, length(x_col)/20), :spacing_upper_bound=>2.32, :spacing_lower_bound=>1.68, :minimum_spacing_fraction=>0.75, :spacing_reduction_factor=>0.95), 
-                                "lattice_reverse_preimage" => Dict(:intial_points=>round(Int64, length(x_ret)/20), :spacing_upper_bound=>2.32, :spacing_lower_bound=>1.68, :minimum_spacing_fraction=>0.75, :spacing_reduction_factor=>0.95),
-                                "lattice_forward_image" => Dict(:radius=>0.2),
-                                "lattice_reverse_image" => Dict(:radius=>0.2)
+        params_lattice = Dict(  "lattice_forward_preimage" => Dict(:intial_points=>round(Int64, length(x_col)/10), :spacing_upper_bound=>2.32, :spacing_lower_bound=>1.68, :minimum_spacing_fraction=>0.75, :spacing_reduction_factor=>0.95), 
+                                "lattice_reverse_preimage" => Dict(:intial_points=>round(Int64, length(x_ret)/10), :spacing_upper_bound=>2.32, :spacing_lower_bound=>1.68, :minimum_spacing_fraction=>0.75, :spacing_reduction_factor=>0.95),
+                                "lattice_forward_image" => Dict(:radius=>0.1),
+                                "lattice_reverse_image" => Dict(:radius=>0.1)
         )
         return TopographicLattice(x_ret, y_ret, x_col, y_col, params_linking, params_lattice)
     end    
@@ -66,22 +66,26 @@ for current_case in trial_cases
     @time tk = TopographicKernel(N, nkerns, ncontacts, s, alpha, beta, gamma, delta, sigmacol, sigmaret, T; case=current_case, epha3_level=epha3, epha3_fraction=epha3_fraction)
     
     # plot the raw data
-    plt = rainbow_plot_kernel(tk, "$(current_case)"; sz2=3)
+    plt = rainbow_plot_kernel(tk, "$(current_case)"; sz2=3, pal=0.45)
     savefig(plt, "figure_distributed_kernels_$(current_case).png")
 
     # plot the lattice plots
 
     lo = kernel_lattice(tk; direction = "L", collicular_divider = 2.0)
     p = lattice_plot(lo)
-    implot = plot(p[1], p[4], p[2], p[3], title = ["$(current_case): Forward" "$(current_case): Reverse" "" ""], layout = (2,2), dpi=500)
+    implot = plot(p[1], p[4], p[2], p[3], 
+                title = ["$(current_case): Forward" "$(current_case): Reverse" "" ""],
+                xlabel = ["Naso-temporal" "Naso-temporal" "Rostro-caudal" "Rostro-caudal"],
+                ylabel = ["Dorsal-ventral" "Dorsal-ventral" "Medial-Lateral" "Medial-Lateral"],
+                layout = (2,2), dpi=500)
     savefig(implot, "figure_lattice_$(current_case).png")
 end
 
 # do the lattice plots for the EphA3 case seperately
     tk_epha3 = TopographicKernel(N, nkerns, ncontacts, s, alpha, beta, gamma, delta, sigmacol, sigmaret, T; case="EphA3", epha3_level=epha3, epha3_fraction=epha3_fraction)
     
-    epha3_inds = tk_epha3.epha3
-    wt_inds = setdiff(1:size(tk_epha3.kernel)[1], epha3_inds)
+    epha3_inds = findall(x -> x == 1, tk_epha3.kernel[:,5])
+    wt_inds = findall(x -> x == 0, tk_epha3.kernel[:,5])
     
     lo_wt_projection = kernel_lattice(tk_epha3; prespecified_inds=wt_inds)
     p_wt = lattice_plot(lo_wt_projection)
@@ -95,10 +99,16 @@ end
     lo_caudal = kernel_lattice(tk_epha3; collicular_divider=0.5, direction="R")
     p_caudal = lattice_plot(lo_caudal)
 
-    pre_implot = plot(p_wt[1], p_epha3[1], p_wt[2], p_epha3[2], title = ["EphA3-WT: Forward" "EphA3-Ilset2: Forward" "" ""], layout = (2,2), dpi=500)
+    pre_implot = plot(p_wt[1], p_epha3[1], p_wt[2], p_epha3[2], title = ["EphA3-WT: Forward" "EphA3-Ilset2: Forward" "" ""],
+                xlabel = ["Naso-temporal" "Naso-temporal" "Rostro-caudal" "Rostro-caudal"],
+                ylabel = ["Dorsal-ventral" "Dorsal-ventral" "Medial-Lateral" "Medial-Lateral"],
+                layout = (2,2), dpi=500)
     savefig(pre_implot, "figure_lattice_EphA3_pre.png")
 
-    post_implot = plot(p_rostral[4], p_caudal[4], p_rostral[3], p_caudal[3], title = ["EphA3-Rostral: Reverse" "EphA3-Caudal: Reverse" "" ""], layout = (2,2), dpi=500)
+    post_implot = plot(p_rostral[4], p_caudal[4], p_rostral[3], p_caudal[3], title = ["EphA3-Rostral: Reverse" "EphA3-Caudal: Reverse" "" ""], 
+                xlabel = ["Naso-temporal" "Naso-temporal" "Rostro-caudal" "Rostro-caudal"],
+                ylabel = ["Dorsal-ventral" "Dorsal-ventral" "Medial-Lateral" "Medial-Lateral"],
+                layout = (2,2), dpi=500)
     savefig(post_implot, "figure_lattice_EphA3_post.png")
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -133,7 +143,7 @@ end
     # #plot!(runtime_plt, d_x, d_t, seriestype=:scatter, color=RGB(0.6350, 0.0780, 0.1840), label="False")
 
     # annotate!(runtime_plt, 7, -4, text("Tsiganov-Koulakov Fit: \n $(round(coef(koulakov_fit)[2], digits=2))x +$(round(coef(koulakov_fit)[1], digits=2)) \n R² = $(round(r2(koulakov_fit), digits=2))", :black, 10))
-    # annotate!(runtime_plt, 7, -6, text("Distributed Kernels Fit: \n $(round(coef(d_fit)[2], digits=2))x +$(round(coef(d_fit)[1], digits=2)) \n R² = $(round(r2(koulakov_fit), digits=2))", :black, 10))
+    # annotate!(runtime_plt, 7, -6, text("Distributed Kernels Fit: \n $(round(coef(d_fit)[2], digits=2))x +$(round(coef(d_fit)[1], digits=2)) \n R² = $(round(r2(d_fit), digits=2))", :black, 10))
 
     # plot!(runtime_plt, title = "Wall-Clock Runtime Comparison", xlabel = "log(N)", ylabel = "log(t)", dpi=500)
     # savefig(runtime_plt, "figure_runtime.png")

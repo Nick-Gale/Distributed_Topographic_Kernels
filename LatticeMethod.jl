@@ -45,7 +45,7 @@ struct TopographicLattice
         pre_synaptic = hcat(pre_x, pre_y)
         post_synaptic = hcat(post_x, post_y)
         topographic_map, pre_synaptic, post_synaptic = topographic_linking(pre_synaptic, post_synaptic, params_linking)
-
+    
         # define the projections pre_image on a restricted number of points
         println("Selecting Points")
         @time forward_preimage_points = select_projection_points(pre_synaptic; params_lattice["lattice_forward_preimage"]...)

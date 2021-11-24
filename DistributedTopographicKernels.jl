@@ -23,9 +23,8 @@ struct TopographicKernel
         CUDA.device!(0)
         xret, yret = retinal_initialisation(N, nkern)
         xs, ys = collicular_initialisation(xret, yret)
-        epha3_mask = map(x -> rand() > epha3_fraction, 1:length(xret))
+        epha3_mask = map(x -> rand() < epha3_fraction, 1:length(xret))
         gpu_xret, gpu_yret, gpu_xs, gpu_ys, gpu_epha3_mask = CUDA.CuArray.([xret, yret, xs, ys, epha3_mask])
-
 
         # minimise using .Flux and transfer back to cpu
         gpu_xs_final, gpu_ys_final = gpu_optimise(gpu_xs, gpu_ys, T, s, alpha, beta, gamma, delta, sigmacol, sigmaret, gpu_xret, gpu_yret, eta, hyp1, hyp2, gpu_epha3_mask, epha3_level, case)
@@ -34,7 +33,7 @@ struct TopographicKernel
         CUDA.unsafe_free!.([gpu_xs_final, gpu_ys_final, gpu_xret, gpu_yret, gpu_xs, gpu_ys])
         CUDA.reclaim()
         # sample 
-        kernel = synaptic_sampling(xs_final, ys_final, s, xret, yret, nkern, ncontacts; seed_number) 
+        kernel = synaptic_sampling(xs_final, ys_final, s, xret, yret, nkern, ncontacts; seed_number, epha3=epha3_mask) 
         new(kernel, epha3_mask)
     end
 end
@@ -57,9 +56,9 @@ function collicular_initialisation(xret, yret)
     return x, y
 end
 
-function synaptic_sampling(xs, ys, s, xret, yret, nkern, ncontacts; seed_number=1) 
+function synaptic_sampling(xs, ys, s, xret, yret, nkern, ncontacts; seed_number=1, epha3=zeros(length(xs))) 
     Random.seed!(seed_number)
-    array = zeros(ceil(Int, length(xs)/nkern) * ncontacts, 4)
+    array = zeros(ceil(Int, length(xs)/nkern) * ncontacts, 5)
     for i = 1:nkern:length(xs)
         sigma = 0.005 .* Matrix(I, 2, 2)
         pdf_i = Distributions.MixtureModel(
@@ -67,6 +66,12 @@ function synaptic_sampling(xs, ys, s, xret, yret, nkern, ncontacts; seed_number=
                 [MvNormal([xs[p], ys[p]], sigma) for p in i:(i + nkern- 1)]... 
             ]
         )
+        if epha3[i] == 1
+            tag_epha3 = 1
+        else
+            tag_epha3 = 0
+        end
+
         for j = 1:ncontacts
             xj, yj = rand(pdf_i) #  [xs[i], ys[i]]# 
             ind = floor(Int, (i-1)/nkern) * ncontacts + j
@@ -75,6 +80,7 @@ function synaptic_sampling(xs, ys, s, xret, yret, nkern, ncontacts; seed_number=
             array[ind, 2] = yret[i]
             array[ind, 3] = xj
             array[ind, 4] = yj
+            array[ind, 5] = tag_epha3
         end
     end
     return array
@@ -90,9 +96,9 @@ function echemi(xi, yi, s, alpha, beta, xret, yret)
 end
 
 function echem_ephrinA2A5(xi, yi, s, alpha, beta, xret, yret)
-    a = alpha .* (erf.((1 .- yi) ./ s) .+ erf.(yi ./ s)) .* (exp.(xret .- xi) .* (erf.((2 .+ s^2 .- 2 .* xi) ./ (2*s)) .+ erf.(s/2 .- xi ./ s)) .+ exp.(xi .- xret) .* (erf.((-2 .+ s^2 .- 2 .* xi) ./ (2*s)) .+ erf.(s/2 .+ xi ./ s))) # 
-    b =  beta .* (erf.((1 .- xi) ./ s) .+ erf.(xi ./ s)) .* (exp.(yret .- yi) .* (erf.((2 .+ s^2 .- 2 .* yi) ./ (2*s)) .- erf.(s/2 .- yi ./ s)) .+ exp.(yi .- yret) .* (erf.((-2 .+ s^2 .- 2 .* yi) ./ (2*s)) .- erf.(s/2 .+ yi ./ s))) # 
-    return 0.25 * exp(s^2/4) .* (b .+ a .* (xret .< 0.05)) 
+    a = alpha .* (2 .* exp.(xi .- 0.5) .* exp.(-xret .+ 0.5) .+ exp.(xret .- 0.5) .* exp.(-xi .+ 0.5)) # a = alpha .* (erf.((1 .- yi) ./ s) .+ erf.(yi ./ s)) .* (exp.(xret .- xi) .* (erf.((2 .+ s^2 .- 2 .* xi) ./ (2*s)) .+ erf.(s/2 .- xi ./ s)) .+ exp.(xi .- xret) .* (erf.((-2 .+ s^2 .- 2 .* xi) ./ (2*s)) .+ erf.(s/2 .+ xi ./ s))) # 
+    b = beta .* (2 .* exp.(yi .- 0.5) .* exp.(-yret .+ 0.5) .+ exp.(yret .- 0.5) .* exp.(-yi .+ 0.5)) # b =  beta .* (erf.((1 .- xi) ./ s) .+ erf.(xi ./ s)) .* (exp.(yret .- yi) .* (erf.((2 .+ s^2 .- 2 .* yi) ./ (2*s)) .- erf.(s/2 .- yi ./ s)) .+ exp.(yi .- yret) .* (erf.((-2 .+ s^2 .- 2 .* yi) ./ (2*s)) .- erf.(s/2 .+ yi ./ s))) # 
+    return 0.25 * exp(s^2/4) .* (b)# .+ a .* (xret .< 0.05)) 
 end
 
 function echem_ephA3(xi, yi, s, alpha, beta, xret, yret, epha3_mask, epha3_level)
@@ -169,8 +175,8 @@ function rainbow_plot_kernel(kernel::TopographicKernel, label; pal=0.45, sz1=4, 
 
     cols = map((x, y) -> RGB(x, pal, y), x_ret ./ maximum(x_ret), y_ret ./ maximum(y_ret))
 
-    plt1 = scatter(x_ret, y_ret, color=cols, markersize=sz1, xlim=(0,1), ylim=(0,1), xlabel="Scaled Nasal Field", ylabel="Scaled Temporal Field", title="$(label): Pre-Synaptic", legend=false, aspect_ratio=1)
-    plt2 = scatter(x_col, y_col, color=cols, markersize=sz2, xlim=(0,1), ylim=(0,1), xlabel="Scaled Rostral Axes", ylabel="Scaled Caudal Axes", title="$(label): Post-Synaptic", legend=false, aspect_ratio=1)
+    plt1 = scatter(x_ret, y_ret, color=cols, markersize=sz1, xlim=(0,1), ylim=(0,1), xlabel="Scaled Nasal-Temporal Field", ylabel="Scaled Dorsal-Ventral Field", title="$(label): Pre-Synaptic", legend=false, aspect_ratio=1)
+    plt2 = scatter(x_col, y_col, color=cols, markersize=sz2, xlim=(0,1), ylim=(0,1), xlabel="Scaled Rostral-Caudal Axes", ylabel="Scaled Medial-Lateral Axes", title="$(label): Post-Synaptic", legend=false, aspect_ratio=1)
     final = plot(plt1, plt2, layout=(1,2), dpi=DPI)
     return final
 end
