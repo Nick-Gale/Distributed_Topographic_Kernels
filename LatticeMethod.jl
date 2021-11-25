@@ -44,7 +44,7 @@ struct TopographicLattice
         # construct the topographic map by some linking function 
         pre_synaptic = hcat(pre_x, pre_y)
         post_synaptic = hcat(post_x, post_y)
-        topographic_map, pre_synaptic, post_synaptic = topographic_linking(pre_synaptic, post_synaptic, params_linking)
+        @time topographic_map, pre_synaptic, post_synaptic = topographic_linking(pre_synaptic, post_synaptic, params_linking)
     
         # define the projections pre_image on a restricted number of points
         println("Selecting Points")
@@ -341,17 +341,37 @@ function topographic_linking(pre_synaptic, post_synaptic, params_linking)
 end
 
 function topographic_phase_linking(pre_synaptic, post_synaptic; phase_parameter=0.0)
+    # pre_list = [[]]
+    # for i = 1:size(pre_synaptic)[1]
+    #     push!(pre_list, pre_synaptic[i, :])
+    # end
+    # deleteat!(pre_list, 1)
+    # pre_list = unique(pre_list)
+    # array = zeros(Int64, size(post_synaptic)[1], length(pre_list))
+    # for j = 1:size(array)[2]
+    #     connected_inds = getindex.(findall(x -> all(pre_synaptic[x, :] .== pre_list[j]), 1:size(pre_synaptic)[1]), 1)
+    #     for i in connected_inds
+    #         array[i, j] += 1
+    #     end
+    # end
+    # new_presynaptic = zeros(Float64, length(pre_list), 2)
+    # for i = 1:length(pre_list)
+    #     new_presynaptic[i, 1] = pre_list[i][1]
+    #     new_presynaptic[i, 2] = pre_list[i][2]
+    # end
+    
     pre_list = [[]]
     for i = 1:size(pre_synaptic)[1]
         push!(pre_list, pre_synaptic[i, :])
     end
     deleteat!(pre_list, 1)
     pre_list = unique(pre_list)
-    array = zeros(Int64, size(post_synaptic)[1], length(pre_list))
-    for j = 1:size(array)[2]
+
+    array = zeros(Int64, length(pre_list), size(post_synaptic)[1])
+    for j = 1:length(pre_list)
         connected_inds = getindex.(findall(x -> all(pre_synaptic[x, :] .== pre_list[j]), 1:size(pre_synaptic)[1]), 1)
         for i in connected_inds
-            array[i, j] += 1
+            array[j, i] += 1
         end
     end
     new_presynaptic = zeros(Float64, length(pre_list), 2)
@@ -359,7 +379,8 @@ function topographic_phase_linking(pre_synaptic, post_synaptic; phase_parameter=
         new_presynaptic[i, 1] = pre_list[i][1]
         new_presynaptic[i, 2] = pre_list[i][2]
     end
-    return array, new_presynaptic, post_synaptic
+     
+    return transpose(array), new_presynaptic, post_synaptic
 end
 
 function topographic_asscociation(pre_synaptic, post_synaptic; radius=0.0001)
