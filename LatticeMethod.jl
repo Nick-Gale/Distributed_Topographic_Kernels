@@ -118,7 +118,7 @@ function select_projection_points(coordinates; intial_points=200, spacing_upper_
     return points_selected
 end
 
-function create_projection(preimage_points, adjacency, preimage_coordinates, image_coordinates; radius=0.05)
+function create_projection(preimage_points, adjacency, preimage_coordinates, image_coordinates; radius=0.01)
     projected_image = zeros(length(preimage_points), 2)
     # be careful with your adjacency matrix in this function - it might need to be transposed
     @showprogress for i = 1:length(preimage_points)
@@ -208,7 +208,7 @@ function lattice_plot(lattice::TopographicLattice; print_removed_links=true)
             y1 = forward_preimage[e1, 2]
             x2 = forward_preimage[e2, 1]
             y2 = forward_preimage[e2, 2]
-            plot!(forward_preimage_plot, [x1, x2], [y1, y2], legend=false, color=:blue)
+            plot!(forward_preimage_plot, [x1, x2], [y1, y2], legend=false, color=:blue, aspect_ratio=:equal)
         end
 
     # forward image
@@ -221,7 +221,7 @@ function lattice_plot(lattice::TopographicLattice; print_removed_links=true)
             y1 = forward_image[e1, 2]
             x2 = forward_image[e2, 1]
             y2 = forward_image[e2, 2]
-            plot!(forward_image_plot, [x1, x2], [y1, y2], legend=false, color=:blue)
+            plot!(forward_image_plot, [x1, x2], [y1, y2], legend=false, color=:blue, aspect_ratio=:equal)
         end
 
     # reverse preimage
@@ -234,7 +234,7 @@ function lattice_plot(lattice::TopographicLattice; print_removed_links=true)
             y1 = reverse_preimage[e1, 2]
             x2 = reverse_preimage[e2, 1]
             y2 = reverse_preimage[e2, 2]
-            plot!(reverse_preimage_plot, [x1, x2], [y1, y2], legend=false, color=:black)
+            plot!(reverse_preimage_plot, [x1, x2], [y1, y2], legend=false, color=:black, aspect_ratio=:equal)
         end
 
     # reverse image
@@ -247,7 +247,7 @@ function lattice_plot(lattice::TopographicLattice; print_removed_links=true)
             y1 = reverse_image[e1, 2]
             x2 = reverse_image[e2, 1]
             y2 = reverse_image[e2, 2]
-            plot!(reverse_image_plot, [x1, x2], [y1, y2], legend=false, color=:black)
+            plot!(reverse_image_plot, [x1, x2], [y1, y2], legend=false, color=:black, aspect_ratio=:equal)
         end
 
 
@@ -260,7 +260,7 @@ function lattice_plot(lattice::TopographicLattice; print_removed_links=true)
             y1 = reverse_image[e1, 2]
             x2 = reverse_image[e2, 1]
             y2 = reverse_image[e2, 2]
-            plot!(reverse_image_plot, [x1, x2], [y1, y2], legend=false, color=:red)
+            plot!(reverse_image_plot, [x1, x2], [y1, y2], legend=false, color=:red, aspect_ratio=:equal)
         end
 
         for i = 1:size(reverse_remove)[1]
@@ -271,7 +271,7 @@ function lattice_plot(lattice::TopographicLattice; print_removed_links=true)
             y1 = reverse_preimage[e1, 2]
             x2 = reverse_preimage[e2, 1]
             y2 = reverse_preimage[e2, 2]
-            plot!(reverse_preimage_plot, [x1, x2], [y1, y2], legend=false, color=:red)
+            plot!(reverse_preimage_plot, [x1, x2], [y1, y2], legend=false, color=:red, aspect_ratio=:equal)
         end
 
         for i = 1:size(forward_remove)[1]
@@ -282,7 +282,7 @@ function lattice_plot(lattice::TopographicLattice; print_removed_links=true)
             y1 = forward_image[e1, 2]
             x2 = forward_image[e2, 1]
             y2 = forward_image[e2, 2]
-            plot!(forward_image_plot, [x1, x2], [y1, y2], legend=false, color=:red)
+            plot!(forward_image_plot, [x1, x2], [y1, y2], legend=false, color=:red, aspect_ratio=:equal)
         end
 
         for i = 1:size(forward_remove)[1]
@@ -293,14 +293,14 @@ function lattice_plot(lattice::TopographicLattice; print_removed_links=true)
             y1 = forward_preimage[e1, 2]
             x2 = forward_preimage[e2, 1]
             y2 = forward_preimage[e2, 2]
-            plot!(forward_preimage_plot, [x1, x2], [y1, y2], legend=false, color=:red)
+            plot!(forward_preimage_plot, [x1, x2], [y1, y2], legend=false, color=:red, aspect_ratio=:equal)
         end
     end
-
-    plot!(forward_preimage_plot, forward_preimage[:, 1], forward_preimage[:, 2], xlim=(0,1), ylim=(0,1), seriestype=:scatter, color=:blue)
-    plot!(reverse_preimage_plot, reverse_preimage[:, 1], reverse_preimage[:, 2], xlim=(0,1), ylim=(0,1), seriestype=:scatter, color=:black)
-    plot!(reverse_image_plot, reverse_image[:, 1], reverse_image[:, 2], xlim=(0,1), ylim=(0,1), seriestype=:scatter, color=:black)
-    plot!(forward_image_plot, forward_image[:, 1], forward_image[:, 2], xlim=(0,1), ylim=(0,1), seriestype=:scatter, color=:blue)
+    xl = (-0.5, 0.5)
+    plot!(forward_preimage_plot, forward_preimage[:, 1], forward_preimage[:, 2], xlim=xl, ylim=xl, seriestype=:scatter, color=:blue)
+    plot!(reverse_preimage_plot, reverse_preimage[:, 1], reverse_preimage[:, 2], xlim=xl, ylim=xl, seriestype=:scatter, color=:black)
+    plot!(reverse_image_plot, reverse_image[:, 1], reverse_image[:, 2], xlim=xl, ylim=xl, seriestype=:scatter, color=:black)
+    plot!(forward_image_plot, forward_image[:, 1], forward_image[:, 2], xlim=xl, ylim=xl, seriestype=:scatter, color=:blue)
 
     return forward_preimage_plot, forward_image_plot, reverse_preimage_plot, reverse_image_plot
 end
@@ -379,7 +379,8 @@ function topographic_phase_linking(pre_synaptic, post_synaptic; phase_parameter=
         new_presynaptic[i, 1] = pre_list[i][1]
         new_presynaptic[i, 2] = pre_list[i][2]
     end
-     
+    
+    println(size(array))
     return transpose(array), new_presynaptic, post_synaptic
 end
 
