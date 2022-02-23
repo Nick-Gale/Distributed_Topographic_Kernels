@@ -186,6 +186,11 @@ end
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 function lattice_plot(lattice::TopographicLattice; print_removed_links=true)
     # this needs to be added with parameters
+    
+    #outline
+    par_t = vcat(collect(1:1000), [1]) ./ 1000 .* 2 .* pi
+    circ_x = 0.5 .* cos.(par_t)
+    circ_y = 0.5 .* sin.(par_t)
 
     # data
     forward_preimage = lattice.forward_preimage
@@ -209,6 +214,7 @@ function lattice_plot(lattice::TopographicLattice; print_removed_links=true)
             x2 = forward_preimage[e2, 1]
             y2 = forward_preimage[e2, 2]
             plot!(forward_preimage_plot, [x1, x2], [y1, y2], legend=false, color=:blue, aspect_ratio=:equal)
+            plot!(forward_preimage_plot, circ_x, circ_y, seriestype=:path, color=:purple, style=:dash, width=1.5)
         end
 
     # forward image
@@ -222,6 +228,7 @@ function lattice_plot(lattice::TopographicLattice; print_removed_links=true)
             x2 = forward_image[e2, 1]
             y2 = forward_image[e2, 2]
             plot!(forward_image_plot, [x1, x2], [y1, y2], legend=false, color=:blue, aspect_ratio=:equal)
+            plot!(forward_image_plot, circ_x, circ_y, seriestype=:path, color=:purple, style=:dash, width=1.5)
         end
 
     # reverse preimage
@@ -235,6 +242,7 @@ function lattice_plot(lattice::TopographicLattice; print_removed_links=true)
             x2 = reverse_preimage[e2, 1]
             y2 = reverse_preimage[e2, 2]
             plot!(reverse_preimage_plot, [x1, x2], [y1, y2], legend=false, color=:black, aspect_ratio=:equal)
+            plot!(reverse_preimage_plot, circ_x, circ_y, seriestype=:path, color=:purple, style=:dash, width=1.5)
         end
 
     # reverse image
@@ -248,6 +256,7 @@ function lattice_plot(lattice::TopographicLattice; print_removed_links=true)
             x2 = reverse_image[e2, 1]
             y2 = reverse_image[e2, 2]
             plot!(reverse_image_plot, [x1, x2], [y1, y2], legend=false, color=:black, aspect_ratio=:equal)
+            plot!(reverse_image_plot, circ_x, circ_y, seriestype=:path, color=:purple, style=:dash, width=1.5)
         end
 
 
