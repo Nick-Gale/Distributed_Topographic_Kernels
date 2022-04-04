@@ -350,25 +350,6 @@ function topographic_linking(pre_synaptic, post_synaptic, params_linking)
 end
 
 function topographic_phase_linking(pre_synaptic, post_synaptic; phase_parameter=0.0)
-    # pre_list = [[]]
-    # for i = 1:size(pre_synaptic)[1]
-    #     push!(pre_list, pre_synaptic[i, :])
-    # end
-    # deleteat!(pre_list, 1)
-    # pre_list = unique(pre_list)
-    # array = zeros(Int64, size(post_synaptic)[1], length(pre_list))
-    # for j = 1:size(array)[2]
-    #     connected_inds = getindex.(findall(x -> all(pre_synaptic[x, :] .== pre_list[j]), 1:size(pre_synaptic)[1]), 1)
-    #     for i in connected_inds
-    #         array[i, j] += 1
-    #     end
-    # end
-    # new_presynaptic = zeros(Float64, length(pre_list), 2)
-    # for i = 1:length(pre_list)
-    #     new_presynaptic[i, 1] = pre_list[i][1]
-    #     new_presynaptic[i, 2] = pre_list[i][2]
-    # end
-    
     pre_list = [[]]
     for i = 1:size(pre_synaptic)[1]
         push!(pre_list, pre_synaptic[i, :])

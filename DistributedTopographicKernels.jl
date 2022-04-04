@@ -140,56 +140,19 @@ end
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Energy Functions.
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-function echemi(xi, yi, s, alpha, beta, xret, yret)
-    K = 1.0
-    # a = alpha .* (1.75 .* exp.(K .* (xi .- 0.5)) .* exp.(K .* (-xret .+ 0.5)) .+ exp.(K .* (xret .- 0.5)) .* exp.(K .* (-xi .+ 0.5))) # alpha .* (erf.((1 .- yi) ./ s) .+ erf.(yi ./ s)) .* (exp.(xret .- xi) .* (erf.((2 .+ s^2 .- 2 .* xi) ./ (2*s)) .+ erf.(s/2 .- xi ./ s)) .+ exp.(xi .- xret) .* (erf.((-2 .+ s^2 .- 2 .* xi) ./ (2*s)) .+ erf.(s/2 .+ xi ./ s))) # 
-    # b = beta .* (1.75 .* exp.(K .* (yi .- 0.5)) .* exp.(K .* (-yret .+ 0.5)) .+ exp.(K .* (yret .- 0.5)) .* exp.(K .* (-yi .+ 0.5)))  # beta .* (erf.((1 .- xi) ./ s) .+ erf.(xi ./ s)) .* (exp.(yret .- yi) .* (erf.((2 .+ s^2 .- 2 .* yi) ./ (2*s)) .+ erf.(s/2 .- yi ./ s)) .+ exp.(yi .- yret) .* (erf.((-2 .+ s^2 .- 2 .* yi) ./ (2*s)) .+ erf.(s/2 .+ yi ./ s))) # 
-
-    a = alpha .* (2.0 .* exp.(K .* (xi)) .* exp.(K .* (-xret)) .+ 1.0 .* exp.(K .* (xret)) .* exp.(K .* (-xi)))
-    b = beta .* (2.0 * exp.(K .* (yi)) .* exp.(K .* (-yret)) .+ 1.0 .* exp.(K .* (yret)) .* exp.(K .* (-yi)))
-    return  a .+ b # 0.25 * exp(s^2/4) .* (b .+ a)  #
-end
-
-function echem_ephrinA2A5(xi, yi, s, alpha, beta, xret, yret)
-    K = 1.0
-    a = alpha .* (1.75 .* exp.(K .* (xi .- 0.5)) .* exp.(K .* (-xret .+ 0.5)) .+ exp.(K .* (xret .- 0.5)) .* exp.(K .* (-xi .+ 0.5))) #a = alpha .* (1.5 .* exp.(xi .- 0.5) .* exp.(-xret .+ 0.5) .+ exp.(xret .- 0.5) .* exp.(-xi .+ 0.5)) # a = alpha .* (erf.((1 .- yi) ./ s) .+ erf.(yi ./ s)) .* (exp.(xret .- xi) .* (erf.((2 .+ s^2 .- 2 .* xi) ./ (2*s)) .+ erf.(s/2 .- xi ./ s)) .+ exp.(xi .- xret) .* (erf.((-2 .+ s^2 .- 2 .* xi) ./ (2*s)) .+ erf.(s/2 .+ xi ./ s))) # 
-    b = beta .* (1.75 .* exp.(K .* (yi .- 0.5)) .* exp.(K .* (-yret .+ 0.5)) .+ exp.(K .* (yret .- 0.5)) .* exp.(K .* (-yi .+ 0.5))) # b = beta .* (1.5 .* exp.(yi .- 0.5) .* exp.(-yret .+ 0.5) .+ exp.(yret .- 0.5) .* exp.(-yi .+ 0.5)) # b =  beta .* (erf.((1 .- xi) ./ s) .+ erf.(xi ./ s)) .* (exp.(yret .- yi) .* (erf.((2 .+ s^2 .- 2 .* yi) ./ (2*s)) .- erf.(s/2 .- yi ./ s)) .+ exp.(yi .- yret) .* (erf.((-2 .+ s^2 .- 2 .* yi) ./ (2*s)) .- erf.(s/2 .+ yi ./ s))) # 
-    return b # 0.25 * exp(s^2/4) .* (b)# .+ a .* (xret .< 0.05)) 
-end
-
-function echem_ephA3(xi, yi, s, alpha, beta, xret, yret, epha3_mask, epha3_level)
-    K = 1.0
-    a = alpha .* (1.75 .* exp.(K .* (xi .- 0.5)) .* exp.(K .* (-xret .+ 0.5)) .+ exp.(K .* (xret .- 0.5)) .* exp.(K .* (-xi .+ 0.5)))# a = alpha .* (1.5 .* exp.(xi .- 0.5) .* exp.(-xret .+ 0.5) .+ exp.(xret .- 0.5) .* exp.(-xi .+ 0.5)) # alpha .* (erf.((1 .- yi) ./ s) .+ erf.(yi ./ s)) .* (exp.(xret .- xi) .* (erf.((2 .+ s^2 .- 2 .* xi) ./ (2*s)) .- erf.(s/2 .- xi ./ s)) .+ exp.(xi .- xret) .* (erf.((-2 .+ s^2 .- 2 .* xi) ./ (2*s)) .- erf.(s/2 .+ xi ./ s))) # 
-    epha3 = epha3_mask .* epha3_level .* exp.(K .* (xi .- 0.5)) .* exp.(K .* (-xret .+ 0.5)) # epha3 = epha3_mask .* epha3_level .* exp.(xret .- 0.5) .* exp.(-xi .+ 0.5)# epha3_mask .* epha3_level .* (erf.((1 .- yi) ./ s) .+ erf.(yi ./ s)) .* (exp.(xret .- xi) .* (erf.((2 .+ s^2 .- 2 .* xi) ./ (2*s)) .- erf.(s/2 .- xi ./ s))) # 
-    b = beta .* (1.75 .* exp.(K .* (yi .- 0.5)) .* exp.(K .* (-yret .+ 0.5)) .+ exp.(K .* (yret .- 0.5)) .* exp.(K .* (-yi .+ 0.5))) # b = beta .* (1.5 .* exp.(yi .- 0.5) .* exp.(-yret .+ 0.5) .+ exp.(yret .- 0.5) .* exp.(-yi .+ 0.5)) # beta .* (erf.((1 .- xi) ./ s) .+ erf.(xi ./ s)) .* (exp.(yret .- yi) .* (erf.((2 .+ s^2 .- 2 .* yi) ./ (2*s)) .- erf.(s/2 .- yi ./ s)) .+ exp.(yi .- yret) .* (erf.((-2 .+ s^2 .- 2 .* yi) ./ (2*s)) .- erf.(s/2 .+ yi ./ s))) # 
-    return b .+ a .+ epha3 # 0.25 * exp(s^2/4) .* (b .+ a .+ epha3) 
-end
-
 function echemTi(xi, yi, s, alpha, beta, xret, yret, epha3_mask, epha3_level)
     K = 2
     a = alpha .* (2.0 .* exp.(K .* (xi)) .* exp.(K .* (-xret)) .+ 1.0 .* (exp.(K .* (xret))  .+ epha3_level .* epha3_mask) .* exp.(K .* (-xi)))
     b = beta .* (2.0 * exp.(K .* (yi)) .* exp.(K .* (-yret)) .+ 1.0 .* exp.(K .* (yret)) .* exp.(K .* (-yi)))
-    # epha3 = alpha .* epha3_mask .* epha3_level # .* exp.(K .* (-xi)) .* exp.(K .* (xret))
-
-    return  a .+ b # .+  epha3 
+    return  a .+ b
 end
 
-
 function eactij(xi, yi, xj, yj, s, xreti, yreti, xretj, yretj, sigmacol, sigmaret, gamma)
-    # a = (xj.^2 .+ yj'.^2) ./ s^2 .+ ((xi .- xj').^2 .+ (yi .- yj').^2) ./ sigmacol^2 .+ ((xreti .- xretj').^2 + (yreti .- yretj').^2) ./ sigmaret^2
-    # b = (erf.((1 .- xj) ./ (sqrt(2)*s)) .+ erf.((1 .+ xj)' ./ (sqrt(2)*s))) .* (erf.((1 .- yj) ./ (sqrt(2)*s)) .+ erf.((1 .- yj)' ./ (sqrt(2)*s)))
-    
-    # return gamma/8 * exp.(-1/2 .* a) .* b
-
-    # return gamma/8 * exp.(- 1/2 .* ((xi.-xj').^2 .+ (yi.-yj').^2) .* (1 ./ sigmacol^2  .+ 1 ./ sigmaret^2)) # exp.(-1/2 .* ((xj.^2 .+ yj'.^2) ./ s^2 .+ ((xi .- xj').^2 .+ (yi .- yj').^2) ./ sigmacol^2 .+ ((xreti .- xretj').^2 + (yreti .- yretj').^2) ./ sigmaret^2)) .* ((erf.((1 .- xj) ./ (sqrt(2)*s)) .+ erf.((1 .+ xj)' ./ (sqrt(2)*s))) .* (erf.((1 .- yj) ./ (sqrt(2)*s)) .+ erf.((1 .- yj)' ./ (sqrt(2)*s))))
-    return gamma/8 * exp.(- 1/2 .* ((xi.-xj').^2 .+ (yi.-yj').^2 .+ (xreti.-xretj').^2 .+ (yreti.-yretj').^2)  ./ sigmaret^2) # exp.(-1/2 .* ((xj.^2 .+ yj'.^2) ./ s^2 .+ ((xi .- xj').^2 .+ (yi .- yj').^2) ./ sigmacol^2 .+ ((xreti .- xretj').^2 + (yreti .- yretj').^2) ./ sigmaret^2)) .* ((erf.((1 .- xj) ./ (sqrt(2)*s)) .+ erf.((1 .+ xj)' ./ (sqrt(2)*s))) .* (erf.((1 .- yj) ./ (sqrt(2)*s)) .+ erf.((1 .- yj)' ./ (sqrt(2)*s))))
-
+    return gamma/8 * exp.(- 1/2 .* ((xi.-xj').^2 .+ (yi.-yj').^2 .+ (xreti.-xretj').^2 .+ (yreti.-yretj').^2)  ./ sigmaret^2)
 end
 
 function ecompij(xi, yi, xj, yj, s, delta)
-    # return delta/8 .* exp.(- 1/2 .* ((xi.-xj').^2 .+ (yi.-yj').^2) ./ s^2) .* (erf.((-2 .+ xi .+ xj') ./ (sqrt(2)*s)) .- erf.((xi .+ xj') ./ (sqrt(2)*s))) .* (erf.((-2 .+ yi .+ yj') ./ (sqrt(2)*s)) .- erf.((yi .+ yj') ./ (sqrt(2)*s)))
-
-    return delta/8 .* exp.(- 1/2 .* ((xi.-xj').^2 .+ (yi.-yj').^2) ./ s^2) #  .* (erf.((-1 .+ xi .+ xj') ./ (sqrt(2)*s)) .- erf.((1 .+ xi .+ xj') ./ (sqrt(2)*s))) .* (erf.((-1 .+ yi .+ yj') ./ (sqrt(2)*s)) .- erf.((1 .+ yi .+ yj') ./ (sqrt(2)*s)))
+    return delta/8 .* exp.(- 1/2 .* ((xi.-xj').^2 .+ (yi.-yj').^2) ./ s^2)
 end
 
 function energy(xs, ys; t, T, s, alpha, beta, gamma, delta, sigmacol, sigmaret, xret, yret, epha3_mask, epha3_level, case)
@@ -227,12 +190,6 @@ end
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 function gpu_optimise(xs, ys, T, s, alpha, beta, gamma, delta, sigmacol, sigmaret, xret, yret, eta, hyp1, hyp2, epha3_mask, epha3_level, case)
     opt = Flux.Optimise.ADAM(eta, (hyp1, hyp2))
-    # opt = Flux.Optimise.NADAM(eta, (hyp1, hyp2))
-    # opt = Flux.Optimise.RADAM(eta, (hyp1, hyp2))
-    # opt = Flux.Optimise.RMSProp(eta, hyp1)
-    # opt = Flux.Optimise.Nesterov(eta, hyp1)
-    # opt = Flux.Optimise.Momentum(eta, hyp1)
-    # opt = Flux.Optimise.Descent(eta)
     loss(t) = energy(xs, ys; t, T, s, alpha, beta, gamma, delta, sigmacol, sigmaret, xret, yret, epha3_mask, epha3_level, case)
     @showprogress for t = 1:T
         θ = Flux.Params([xs, ys])
@@ -248,11 +205,9 @@ function gpu_optimise(xs, ys, T, s, alpha, beta, gamma, delta, sigmacol, sigmare
     return xs, ys
 end
 
-function gpu_optimise_injection_comparison(projection_diameter, xs, ys, T, s, alpha, beta, gamma, delta, sigmacol, sigmaret, xret, yret, eta, hyp1, hyp2, epha3_mask, epha3_level, case)
+function gpu_optimise_injection_comparison(projection_measure, xs, ys, T, s, alpha, beta, gamma, delta, sigmacol, sigmaret, xret, yret, eta, hyp1, hyp2, epha3_mask, epha3_level, case)
     opt = Flux.Optimise.ADAM(eta, (hyp1, hyp2))
-    # opt = Flux.Optimise.Descent(eta)
     loss(t) = energy(xs, ys; t, T, s, alpha, beta, gamma, delta, sigmacol, sigmaret, xret, yret, epha3_mask, epha3_level, case)
-
     retinal_injection_site = [0.1, 0.1]
     tracked_indexes = findall(i -> sqrt((xret[i] - retinal_injection_site[1])^2 + (yret[i] - retinal_injection_site[2])^2)<0.025, 1:length(xret))
     @showprogress for t = 1:T
@@ -264,24 +219,16 @@ function gpu_optimise_injection_comparison(projection_diameter, xs, ys, T, s, al
         mag = sqrt.(((θ[1] .- 0.0).^2 .+  (θ[2] .- 0.0).^2))
         xs[mask] .= 0.4 .* xs[mask] ./ mag[mask]
         ys[mask] .= 0.4 .* ys[mask] ./ mag[mask]
-
-        projection_diameter[t] = set_diameter(Array(xs[tracked_indexes]), Array(ys[tracked_indexes]))
+        projection_measure[t] = set_measure(Array(xs[tracked_indexes]), Array(ys[tracked_indexes]))
     end
-  
     return xs, ys
 end
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Theoretical Timing.
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-function theoretical_timer(xs, ys, T, s, alpha, beta, gamma, delta, sigmacol, sigmaret, xret, yret, eta, hyp1, hyp2, epha3_mask, epha3_level, case)
-    for t = 1:T
-        energy(xs, ys; t, T, s, alpha, beta, gamma, delta, sigmacol, sigmaret, xret, yret, epha3_mask, epha3_level, case)
-    end
-    return nothing
-end
 
-function set_diameter(xs, ys)
+function set_measure(xs, ys)
     # area of ellipsoid
     xr = maximum(abs.(xs .- xs'))
     yr = maximum(abs.(ys .- ys'))
