@@ -168,6 +168,6 @@ for current_case in trial_cases
     push!(diameters, tk.diameter)
 end
 
-b2comp = plot(1:length(diameters[1]), diameters, label = ["WT" "Beta2" ""], title="Projective Field Diameter", dpi=500, xlabel="Iterations")
+b2comp = plot(1:length(diameters[1]), diameters, label = ["WT" "Beta2" ""], title="Ellipse Area Covering Projective Field", dpi=500, xlabel="Iterations")
 vline!([round(Int, 1/5 * T)], label = "Retinal Activity Onset")
 savefig(b2comp, "figure_beta2vsWTprojection.png")

@@ -282,7 +282,11 @@ function theoretical_timer(xs, ys, T, s, alpha, beta, gamma, delta, sigmacol, si
 end
 
 function set_diameter(xs, ys)
-    return mean(sqrt.((xs .- xs').^2 .+ (ys .- ys').^2))
+    # area of ellipsoid
+    xr = maximum(abs.(xs .- xs'))
+    yr = maximum(abs.(ys .- ys'))
+
+    return 0.5 * pi * xr * yr # mean(sqrt.((xs .- xs').^2 .+ (ys .- ys').^2)) # maximum(sqrt.((xs .- xs').^2 .+ (ys .- ys').^2)) #
 end
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
