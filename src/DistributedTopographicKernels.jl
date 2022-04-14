@@ -44,9 +44,6 @@ struct TopographicKernel
 
         # sample 
         kernel = synaptic_sampling(xs_final, ys_final, s, xret, yret, nkern, ncontacts; seed_number, epha3=epha3_mask) 
-
-        # a theoretical timing bound is 4 times the energy call
-        
         new(kernel, t1, 4 * t2)
     end
 end

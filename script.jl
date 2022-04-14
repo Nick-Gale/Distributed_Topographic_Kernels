@@ -1,10 +1,6 @@
-# load packages
-using Revise
-includet("DistributedTopographicKernels.jl")
-includet("LatticeMethod.jl")
-using .DistributedTopographicKernels
-using .LatticeMethod
-using Plots
+include("./src/DistributedTopographicKernels.jl")
+include("./src/LatticeMethod.jl")
+using .DistributedTopographicKernels, .LatticeMethod, Plots
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Set parameters.
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -26,38 +22,6 @@ N = (30)^2 * nkerns
 ncontacts = 10
 T = 200
 et = 0.005
-
-#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# Function to generate lattice object from kernel
-#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    function kernel_lattice(kernel::TopographicKernel; points=250, collicular_divider=2.0, direction="L", prespecified_inds=nothing, r1=0.05, r2=0.05)
-
-        # ALLOW TO SPECIFY THE RADIUS
-        if prespecified_inds != nothing
-            inds = prespecified_inds
-        else
-            inds = 1:size(kernel.kernel)[1]
-        end
-
-        if direction == "L"
-            inds_selected = findall(x -> x < collicular_divider, kernel.kernel[inds, 3])
-        elseif direction == "R"
-            inds_selected = findall(x -> x > collicular_divider, kernel.kernel[inds, 3])
-        end
-        
-        x_ret = kernel.kernel[inds, 1][inds_selected]
-        y_ret = kernel.kernel[inds, 2][inds_selected]
-        x_col = kernel.kernel[inds, 3][inds_selected]
-        y_col = kernel.kernel[inds, 4][inds_selected]
-
-        params_linking = Dict("linking_key" => "phase_linking", "params" => Dict(:phase_parameter => nothing))
-        params_lattice = Dict(  "lattice_forward_preimage" => Dict(:intial_points=>points, :spacing_upper_bound=>2.32, :spacing_lower_bound=>1.68, :minimum_spacing_fraction=>0.75, :spacing_reduction_factor=>0.95), 
-                                "lattice_reverse_preimage" => Dict(:intial_points=>points, :spacing_upper_bound=>2.32, :spacing_lower_bound=>1.68, :minimum_spacing_fraction=>0.75, :spacing_reduction_factor=>0.95),
-                                "lattice_forward_image" => Dict(:radius=>r1),
-                                "lattice_reverse_image" => Dict(:radius=>r2)
-        )
-        return TopographicLattice(x_ret, y_ret, x_col, y_col, params_linking, params_lattice)
-    end    
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Plots for each of the phenotpyes
@@ -111,9 +75,9 @@ end
                 layout = (2,2), dpi=500)
     savefig(post_implot, "figures/figure_lattice_EphA3_post.png")
 
-# #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# # Runtime plots
-# #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Runtime plots
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     using GLM
     using DataFrames
 
@@ -148,7 +112,6 @@ end
 
     plot!(runtime_plt, d_x, d_t, seriestype=:line, markershape=:rect, color=RGB(0.6350, 0.0780, 0.1840), label="Distributed Kernels Method")
     #plot!(runtime_plt, d_x, d_t, seriestype=:scatter, color=RGB(0.6350, 0.0780, 0.1840), label="False")
-
     # plot!(runtime_plt, t_x, t_t, seriestype=:line, markershape=:circle, linestyle=:dash, alpha=0.2, color=RGB(0.0, 0.0, 0.0), label="Theoretical Limit")
 
     annotate!(runtime_plt, 7.12, 7, text("Tsiganov-Koulakov Fit: \n $(round(coef(koulakov_fit)[2], digits=2))x +$(round(coef(koulakov_fit)[1], digits=2)) \n R² = $(round(r2(koulakov_fit), digits=2))", :black, 10))

@@ -14,6 +14,7 @@ export topograph_linking
 export TopographicLattice
 export exist_line_intersection
 export lattice_plot
+export kernel_lattice
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Type Definitions
 #--------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -385,6 +386,39 @@ function topographic_asscociation(pre_synaptic, post_synaptic; radius=0.0001)
     end
     return array
 end
+
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Function to generate lattice object from kernel
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+function kernel_lattice(kernel; points=250, collicular_divider=2.0, direction="L", prespecified_inds=nothing, r1=0.05, r2=0.05)
+
+    # ALLOW TO SPECIFY THE RADIUS
+    if prespecified_inds != nothing
+        inds = prespecified_inds
+    else
+        inds = 1:size(kernel.kernel)[1]
+    end
+
+    if direction == "L"
+        inds_selected = findall(x -> x < collicular_divider, kernel.kernel[inds, 3])
+    elseif direction == "R"
+        inds_selected = findall(x -> x > collicular_divider, kernel.kernel[inds, 3])
+    end
+    
+    x_ret = kernel.kernel[inds, 1][inds_selected]
+    y_ret = kernel.kernel[inds, 2][inds_selected]
+    x_col = kernel.kernel[inds, 3][inds_selected]
+    y_col = kernel.kernel[inds, 4][inds_selected]
+
+    params_linking = Dict("linking_key" => "phase_linking", "params" => Dict(:phase_parameter => nothing))
+    params_lattice = Dict(  "lattice_forward_preimage" => Dict(:intial_points=>points, :spacing_upper_bound=>2.32, :spacing_lower_bound=>1.68, :minimum_spacing_fraction=>0.75, :spacing_reduction_factor=>0.95), 
+                            "lattice_reverse_preimage" => Dict(:intial_points=>points, :spacing_upper_bound=>2.32, :spacing_lower_bound=>1.68, :minimum_spacing_fraction=>0.75, :spacing_reduction_factor=>0.95),
+                            "lattice_forward_image" => Dict(:radius=>r1),
+                            "lattice_reverse_image" => Dict(:radius=>r2)
+    )
+    return TopographicLattice(x_ret, y_ret, x_col, y_col, params_linking, params_lattice)
+end    
+
 
 # end module
 end
