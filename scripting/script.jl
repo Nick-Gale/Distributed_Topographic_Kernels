@@ -1,5 +1,3 @@
-include("./src/DistributedTopographicKernels.jl")
-include("./src/LatticeMethod.jl")
 using .DistributedTopographicKernels, .LatticeMethod, Plots
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Set parameters.
@@ -24,14 +22,29 @@ T = 200
 et = 0.005
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# B2-WT measure comparison
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+trial_cases = ["WT", "Beta2"] 
+diameters = []
+for current_case in trial_cases
+    tk = TopographicKernelTemporal(N, nkerns, ncontacts, s, alpha, beta, gamma, delta, sigmacol, sigmaret, T; eta=et, case=current_case, epha3_level=epha3, epha3_fraction=epha3_fraction)
+    push!(diameters, tk.diameter)
+end
+
+b2comp = plot(1:length(diameters[1]), diameters, label = ["WT" "Beta2-/-" ""], title="Ellipse Area Covering Projective Field", dpi=500, xlabel="Iterations")
+vline!([round(Int, 1/5 * T)], label = "Retinal Activity Onset")
+savefig(b2comp, "./figures/figure_beta2vsWTprojection.png")
+
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Plots for each of the phenotpyes
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-trial_cases = ["WT", "EphA3", "ephrinTKO", "Math5", "Beta2"] #    
-for current_case in trial_cases
-    tk = TopographicKernel(N, nkerns, ncontacts, s, alpha, beta, gamma, delta, sigmacol, sigmaret, T; eta=et, case=current_case, epha3_level=epha3, epha3_fraction=epha3_fraction)
+trial_cases = Dict("WT" => "WT", "EphA3" => "EphA3 Knock-In", "ephrinTKO" => "ephrinTKO", "Math5" => "Math5-/-", "Beta2" => "Beta2-/-") #    
+#trial_cases = ["WT", "EphA3", "ephrinTKO", "Math5", "Beta2"]
+for (key, current_case) in trial_cases
+    tk = TopographicKernel(N, nkerns, ncontacts, s, alpha, beta, gamma, delta, sigmacol, sigmaret, T; eta=et, case=key, epha3_level=epha3, epha3_fraction=epha3_fraction)
     # plot the raw data
     plt = rainbow_plot_kernel(tk, "$(current_case)"; sz2=3, pal=0.45)
-    savefig(plt, "figure_distributed_kernels_$(current_case).png")
+    savefig(plt, "./figures/figure_distributed_kernels_$(key).png")
 
     # plot the lattice plots
 
@@ -42,7 +55,7 @@ for current_case in trial_cases
                 xlabel = ["Naso-Temporal" "Naso-Temporal" "Rostro-Caudal" "Rostro-Caudal"],
                 ylabel = ["Dorsal-Ventral" "Dorsal-Ventral" "Medial-Lateral" "Medial-Lateral"],
                 layout = (2,2), dpi=500)
-    savefig(implot, "figures/figure_lattice_$(current_case).png")
+    savefig(implot, "./figures/figure_lattice_$(key).png")
 end
 
 # do the lattice plots for the EphA3 case seperately
@@ -63,17 +76,17 @@ end
     lo_caudal = kernel_lattice(tk_epha3; points=150, collicular_divider=0.0, direction="R", r2=0.25)
     p_caudal = lattice_plot(lo_caudal)
 
-    pre_implot = plot(p_wt[1], p_epha3[1], p_wt[2], p_epha3[2], title = ["EphA3-WT: Forward" "EphA3-Ilset2: Forward" "" ""],
+    pre_implot = plot(p_wt[1], p_epha3[1], p_wt[2], p_epha3[2], title = ["EphA3-Islet2(-ve): Forward" "EphA3-Islet2(+ve): Forward" "" ""],
                 xlabel = ["Naso-Temporal" "Naso-Temporal" "Rostro-Caudal" "Rostro-Caudal"],
                 ylabel = ["Dorsal-Ventral" "Dorsal-Ventral" "Medial-Lateral" "Medial-Lateral"],
                 layout = (2,2), dpi=500)
-    savefig(pre_implot, "figures/figure_lattice_EphA3_pre.png")
+    savefig(pre_implot, "./figures/figure_lattice_EphA3_pre.png")
 
     post_implot = plot(p_rostral[4], p_caudal[4], p_rostral[3], p_caudal[3], title = ["EphA3-Rostral: Reverse" "EphA3-Caudal: Reverse" "" ""], 
                 xlabel = ["Naso-Temporal" "Naso-Temporal" "Rostro-Caudal" "Rostro-Caudal"],
                 ylabel = ["Dorsal-Ventral" "Dorsal-Ventral" "Medial-Lateral" "Medial-Lateral"],
                 layout = (2,2), dpi=500)
-    savefig(post_implot, "figures/figure_lattice_EphA3_post.png")
+    savefig(post_implot, "./figures/figure_lattice_EphA3_post.png")
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Runtime plots
@@ -83,13 +96,11 @@ end
 
     koulakov_data = [1000, 25], [2000, 275], [3000, 973], [4000, 2370] # [[100, 1.9], [500, 4.1], [1000, 25], [2000, 275], [3000, 973], [4000, 2370]]#, [5000, 4755]]
     distributed_kernels_data = []
-    distributed_kernels_theoretical = []
 
     for i in koulakov_data
         Ni = round(Int, i[1])
-        tk = TopographicKernel(Ni, 1, ncontacts, s, alpha, beta, gamma, delta, sigmacol, sigmaret, T; case=trial_cases[1], epha3_level=epha3, epha3_fraction=epha3_fraction)
+        tk = TopographicKernel(Ni, 1, ncontacts, s, alpha, beta, gamma, delta, sigmacol, sigmaret, T; case=trial_cases["WT"], epha3_level=epha3, epha3_fraction=epha3_fraction)
         push!(distributed_kernels_data, [Ni, tk.rtime])
-        push!(distributed_kernels_theoretical, [Ni, tk.ttime])
     end
 
     koulakov_x = [log(i[1]) for i in koulakov_data]
@@ -99,38 +110,20 @@ end
     d_t = [log(i[2]) for i in distributed_kernels_data]
 
     t_x = [log(i[1]) for i in distributed_kernels_data]
-    t_t = [log(i[2]) for i in distributed_kernels_theoretical]
     
 
     koulakov_fit = lm(@formula(T ~ X), DataFrame(X=koulakov_x, T=koulakov_t))
     d_fit = lm(@formula(T ~ X), DataFrame(X=d_x, T=d_t))
-    t_fit = lm(@formula(T ~ X), DataFrame(X=t_x, T=t_t))
 
     runtime_plt = plot()
     plot!(runtime_plt, koulakov_x, koulakov_t, seriestype=:line, markershape=:rect, color=RGB(0, 0.4470, 0.7410), label="Tsiganov-Koulakov")
-    #plot!(runtime_plt, koulakov_x, koulakov_t, seriestype=:scatter, color=RGB(0, 0.4470, 0.7410))
+    #plot!(runtime_plt, koulakov_fit, label="Tsiganov-Koulakov Fit")
 
-    plot!(runtime_plt, d_x, d_t, seriestype=:line, markershape=:rect, color=RGB(0.6350, 0.0780, 0.1840), label="Distributed Kernels Method")
-    #plot!(runtime_plt, d_x, d_t, seriestype=:scatter, color=RGB(0.6350, 0.0780, 0.1840), label="False")
-    # plot!(runtime_plt, t_x, t_t, seriestype=:line, markershape=:circle, linestyle=:dash, alpha=0.2, color=RGB(0.0, 0.0, 0.0), label="Theoretical Limit")
-
-    annotate!(runtime_plt, 7.12, 7, text("Tsiganov-Koulakov Fit: \n $(round(coef(koulakov_fit)[2], digits=2))x +$(round(coef(koulakov_fit)[1], digits=2)) \n R² = $(round(r2(koulakov_fit), digits=2))", :black, 10))
-    annotate!(runtime_plt, 7.12, 5, text("Distributed Kernels Fit: \n $(round(coef(d_fit)[2], digits=2))x +$(round(coef(d_fit)[1], digits=2)) \n R² = $(round(r2(d_fit), digits=2))", :black, 10))
+    plot!(runtime_plt, d_x, d_t, seriestype=:line, markershape=:rect, color=RGB(0.6350, 0.0780, 0.1840), label="Distributed Kernels")
+    annotate!(runtime_plt, 7.12, 7, text("Tsiganov-Koulakov Fit: \n $(round(coef(koulakov_fit)[2], digits=2))x +$(round(coef(koulakov_fit)[1], digits=2)) \n R² = $(round(r2(koulakov_fit), digits=3))", :black, 10))
+    annotate!(runtime_plt, 7.12, 5, text("Distributed Kernels Fit: \n $(round(coef(d_fit)[2], digits=2))x +$(round(coef(d_fit)[1], digits=2)) \n R² = $(round(r2(d_fit), digits=3))", :black, 10))
+    #plot!(runtime_plt, d_fit, label="Distributed Kernels Fit")
 
     plot!(runtime_plt, title = "Wall-Clock Runtime Comparison", xlabel = "log(N)", ylabel = "log(t)", dpi=500)
-    savefig(runtime_plt, "figures/figure_runtime.png")
+    savefig(runtime_plt, "./figures/figure_runtime.png")
 
-#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# B2-WT measure comparison
-#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-trial_cases = ["WT", "Beta2"] # ["WT", "EphA3", "ephrinTKO", "Math5", "β2"] #    
-diameters = []
-for current_case in trial_cases
-    tk = TopographicKernelTemporal(N, nkerns, ncontacts, s, alpha, beta, gamma, delta, sigmacol, sigmaret, T; eta=et, case=current_case, epha3_level=epha3, epha3_fraction=epha3_fraction)
-    
-    push!(diameters, tk.diameter)
-end
-
-b2comp = plot(1:length(diameters[1]), diameters, label = ["WT" "Beta2" ""], title="Ellipse Area Covering Projective Field", dpi=500, xlabel="Iterations")
-vline!([round(Int, 1/5 * T)], label = "Retinal Activity Onset")
-savefig(b2comp, "figure_beta2vsWTprojection.png")

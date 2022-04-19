@@ -1,28 +1,17 @@
 
 module DistributedTopographicKernels
-using Flux
-using SpecialFunctions
-using Distributions
-using CUDA
-using LinearAlgebra
-using Random
-using Plots
-using StatsBase
-using ProgressMeter
+using Flux, SpecialFunctions, Distributions, CUDA, LinearAlgebra, Random, Plots, StatsBase, ProgressMeter
 
-
-export TopographicKernel
-export TopographicKernelTemporal
-export rainbow_plot_kernel
+export TopographicKernel, TopographicKernelTemporal, rainbow_plot_kernel
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Constructor Functions.
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 struct TopographicKernel
     kernel::Array{Float64, 2}
     rtime::Float64
-    ttime::Float64
     function TopographicKernel(N, nkern, ncontacts, s, alpha, beta, gamma, delta, sigmacol, sigmaret, T; eta=0.01, hyp1=0.9, hyp2=0.999, case="WT", seed_number=1, epha3_level=1.0, epha3_fraction=0.5)
         # initialise on the GPU
+        Random.seed!(seed_number)
         CUDA.device!(1)
         xret, yret = retinal_initialisation(N, nkern)
         xs, ys = collicular_initialisation(xret, yret)
@@ -36,7 +25,6 @@ struct TopographicKernel
 
         # minimise using .Flux and transfer back to cpu
         t1 = @elapsed gpu_xs_final, gpu_ys_final = gpu_optimise(gpu_xs, gpu_ys, T, s, alpha, beta, gamma, delta, sigmacol, sigmaret, gpu_xret, gpu_yret, eta, hyp1, hyp2, gpu_epha3_mask, epha3_level, case)
-        t2 = @elapsed theoretical_timer(gpu_xs, gpu_ys, T, s, alpha, beta, gamma, delta, sigmacol, sigmaret, gpu_xret, gpu_yret, eta, hyp1, hyp2, gpu_epha3_mask, epha3_level, case)
         xs_final = Array(gpu_xs_final)
         ys_final = Array(gpu_ys_final)
         CUDA.unsafe_free!.([gpu_xs_final, gpu_ys_final, gpu_xret, gpu_yret, gpu_xs, gpu_ys])
@@ -44,18 +32,18 @@ struct TopographicKernel
 
         # sample 
         kernel = synaptic_sampling(xs_final, ys_final, s, xret, yret, nkern, ncontacts; seed_number, epha3=epha3_mask) 
-        new(kernel, t1, 4 * t2)
+        new(kernel, t1)
     end
 end
 
 struct TopographicKernelTemporal
     kernel::Array{Float64, 2}
     rtime::Float64
-    ttime::Float64
     diameter::Array{Float64, 1}
     function TopographicKernelTemporal(N, nkern, ncontacts, s, alpha, beta, gamma, delta, sigmacol, sigmaret, T; eta=0.01, hyp1=0.9, hyp2=0.999, case="WT", seed_number=1, epha3_level=1.0, epha3_fraction=0.5)
         # initialise on the GPU
         CUDA.device!(1)
+        Random.seed!(seed_number)
         xret, yret = retinal_initialisation(N, nkern)
         xs, ys = collicular_initialisation(xret, yret)
         rs = zeros(N)
@@ -73,7 +61,7 @@ struct TopographicKernelTemporal
         ys_final = Array(gpu_ys_final)
         # sample 
         kernel = synaptic_sampling(xs_final, ys_final, s, xret, yret, nkern, ncontacts; seed_number, epha3=epha3_mask) 
-        new(kernel, t1, 4, projection_diameter)
+        new(kernel, t1, projection_diameter)
     end
 end
 
@@ -174,9 +162,7 @@ function energy(xs, ys; t, T, s, alpha, beta, gamma, delta, sigmacol, sigmaret, 
         act = sum(eactij(xs, ys, xs, ys, s, xret, yret, xret, yret, sigmacol, 1.0 * sigmaret, 0.05 * gamma)) # ./ length(xs)^2
         comp = sum(ecompij(xs, ys, xs, ys, 1 * s, 1 * delta)) # ./ length(xs)^2
     end
-    if t > 2*T/5
-        return  chem .+ comp .+ act
-    elseif t > T/5
+    if t > 1*T/5
         return chem .+ comp .+ act
     else
         return chem
@@ -209,7 +195,7 @@ function gpu_optimise_injection_comparison(projection_measure, xs, ys, T, s, alp
     tracked_indexes = findall(i -> sqrt((xret[i] - retinal_injection_site[1])^2 + (yret[i] - retinal_injection_site[2])^2)<0.025, 1:length(xret))
     @showprogress for t = 1:T
         θ = Flux.Params([xs, ys])
-        θ̄bar= Flux.gradient(() -> loss(t), θ)
+        θ̄bar = Flux.gradient(() -> loss(t), θ)
         Flux.Optimise.update!(opt, θ, θ̄bar)
         # # enforce boundary conditions
         mask = findall(x -> x > 0.5, sqrt.((θ[1] .- 0.0).^2 .+  (θ[2] .- 0.0).^2))
@@ -229,7 +215,6 @@ function set_measure(xs, ys)
     # area of ellipsoid
     xr = maximum(abs.(xs .- xs'))
     yr = maximum(abs.(ys .- ys'))
-
     return 0.5 * pi * xr * yr # mean(sqrt.((xs .- xs').^2 .+ (ys .- ys').^2)) # maximum(sqrt.((xs .- xs').^2 .+ (ys .- ys').^2)) #
 end
 
@@ -248,7 +233,7 @@ function rainbow_plot_kernel(kernel::TopographicKernel, label; pal=0.45, sz1=4, 
     x_col = kernel.kernel[:, 3]
     y_col = kernel.kernel[:, 4]
 
-    inj_inds_nasal = (x_ret .+ 0.2) .^2 .+ (y_ret .+ 0.1) .^2 .< 0.002
+    inj_inds_nasal = (x_ret .+ 0.225) .^2 .+ (y_ret .+ 0.1) .^2 .< 0.002
     inj_inds_cent = (x_ret .- 0.0) .^2 .+ (y_ret .- 0.0) .^2 .< 0.002
     inj_inds_temporal = (x_ret .+ 0.1) .^2 .+ (y_ret .+ 0.0) .^2 .< 0.002
 
