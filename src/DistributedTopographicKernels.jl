@@ -12,7 +12,7 @@ struct TopographicKernel
     function TopographicKernel(N, nkern, ncontacts, s, alpha, beta, gamma, delta, sigmacol, sigmaret, T; eta=0.01, hyp1=0.9, hyp2=0.999, case="WT", seed_number=1, epha3_level=1.0, epha3_fraction=0.5)
         # initialise on the GPU
         Random.seed!(seed_number)
-        CUDA.device!(1)
+        CUDA.device!(0)
         xret, yret = retinal_initialisation(N, nkern)
         xs, ys = collicular_initialisation(xret, yret)
         rs = zeros(N)
@@ -157,6 +157,10 @@ function energy(xs, ys; t, T, s, alpha, beta, gamma, delta, sigmacol, sigmaret, 
         chem = sum(echemTi(xs, ys, s, alpha, beta, xret, yret, epha3_mask, 0)) # sum(echemi(xs, ys, s, alpha, beta, xret, yret)) # ./ length(xs)
         act = sum(eactij(xs, ys, xs, ys, s, xret, yret, xret, yret, sigmacol, sigmaret, gamma)) # ./ length(xs)^2
         comp = sum(ecompij(xs, ys, xs, ys, s, delta/15)) # ./ length(xs)^2
+    elseif case == "ephrinBKO"
+        chem = sum(echemTi(xs, ys, s, alpha, beta * 0, xret, yret, epha3_mask, 0)) # echem_ephrinA2A5(xs, ys, s, alpha, beta, xret, yret) ./ length(xs)
+        act = sum(eactij(xs, ys, xs, ys, s, xret, yret, xret, yret, sigmacol, sigmaret, gamma)) # ./ length(xs)^2
+        comp = sum(ecompij(xs, ys, xs, ys, s, delta)) # ./ length(xs)^2
     elseif case == "Beta2"
         chem = sum(echemTi(xs, ys, s, alpha, beta, xret, yret, epha3_mask, 0)) # sum(echemi(xs, ys, s, alpha, beta, xret, yret)) # ./ length(xs)
         act = sum(eactij(xs, ys, xs, ys, s, xret, yret, xret, yret, sigmacol, 1.0 * sigmaret, 0.05 * gamma)) # ./ length(xs)^2
@@ -233,9 +237,9 @@ function rainbow_plot_kernel(kernel::TopographicKernel, label; pal=0.45, sz1=4, 
     x_col = kernel.kernel[:, 3]
     y_col = kernel.kernel[:, 4]
 
-    inj_inds_nasal = (x_ret .+ 0.225) .^2 .+ (y_ret .+ 0.1) .^2 .< 0.002
-    inj_inds_cent = (x_ret .- 0.0) .^2 .+ (y_ret .- 0.0) .^2 .< 0.002
-    inj_inds_temporal = (x_ret .+ 0.1) .^2 .+ (y_ret .+ 0.0) .^2 .< 0.002
+    inj_inds_nasal =  (x_ret .+ 0) .^2 .+ (y_ret .+ 0.4) .^2 .< 0.002 # (x_ret .+ 0.225) .^2 .+ (y_ret .+ 0.1) .^2 .< 0.002
+    inj_inds_cent = (x_ret .- 0.1) .^2 .+ (y_ret .- 0.0) .^2 .< 0.002
+    inj_inds_temporal = (x_ret .+ 0.1) .^2 .+ (y_ret .- 0.25) .^2 .< 0.002
 
     cols = map((x, y) -> RGBA(x, pal, y, 0.5), (x_ret .+ 0.5) ./ maximum(x_ret .+ 0.5), (y_ret .+ 0.5) ./ maximum(y_ret .+ 0.5))
 
@@ -251,12 +255,12 @@ function rainbow_plot_kernel(kernel::TopographicKernel, label; pal=0.45, sz1=4, 
     plot!(plt2, x_col[inj_inds_nasal], y_col[inj_inds_nasal], color=:red, markersize=sz1, st=:scatter, dpi=DPI)
 
     # # do a nasal injection
-    # plot!(plt1, x_ret[inj_inds_cent], y_ret[inj_inds_cent], color=:blue, markersize=sz1, st=:scatter)
-    # plot!(plt2, x_col[inj_inds_cent], y_col[inj_inds_cent], color=:blue,  markersize=sz1, st=:scatter)
+    plot!(plt1, x_ret[inj_inds_cent], y_ret[inj_inds_cent], color=:blue, markersize=sz1, st=:scatter)
+    plot!(plt2, x_col[inj_inds_cent], y_col[inj_inds_cent], color=:blue,  markersize=sz1, st=:scatter)
     
     # # do a nasal injection
-    # plot!(plt1, x_ret[inj_inds_temporal], y_ret[inj_inds_temporal], color=:cyan, markersize=sz1, st=:scatter)
-    # plot!(plt2, x_col[inj_inds_temporal], y_col[inj_inds_temporal], color=:cyan, markersize=sz1, st=:scatter)
+    plot!(plt1, x_ret[inj_inds_temporal], y_ret[inj_inds_temporal], color=:cyan, markersize=sz1, st=:scatter)
+    plot!(plt2, x_col[inj_inds_temporal], y_col[inj_inds_temporal], color=:cyan, markersize=sz1, st=:scatter)
 
     
     final = plot(plt1, plt2, layout=(1,2), dpi=DPI)
